@@ -1,0 +1,161 @@
+# Ensure required libraries are installed and loaded
+required_packages <- c("tidyverse", "ggplot2", "corrplot", "caret", "pROC", "gridExtra")
+missing_packages <- required_packages[!required_packages %in% installed.packages()[,"Package"]]
+if(length(missing_packages)) install.packages(missing_packages)
+lapply(required_packages, library, character.only = TRUE)
+
+# Set seed for reproducibility
+set.seed(123)
+
+# Load the dataset 
+data <- read.csv("Medicaldataset.csv")
+
+# 1. Data Cleaning and Preprocessing
+# Rename columns for consistency (remove dots, make lowercase)
+colnames(data) <- c("age", "gender", "heart_rate", "systolic_bp", "diastolic_bp", 
+                    "blood_sugar", "ck_mb", "troponin", "result")
+
+# Check for missing values
+cat("Missing Values Check:\n")
+colSums(is.na(data))
+
+# Handle outliers using IQR method for numeric columns
+numeric_cols <- c("age", "heart_rate", "systolic_bp", "diastolic_bp", 
+                  "blood_sugar", "ck_mb", "troponin")
+outlier_summary <- data.frame(Variable = numeric_cols, Outliers = NA)
+
+for (col in numeric_cols) {
+  Q1 <- quantile(data[[col]], 0.25, na.rm = TRUE)
+  Q3 <- quantile(data[[col]], 0.75, na.rm = TRUE)
+  IQR <- Q3 - Q1
+  lower_bound <- Q1 - 1.5 * IQR
+  upper_bound <- Q3 + 1.5 * IQR
+  
+  # Count outliers
+  outliers <- sum(data[[col]] < lower_bound | data[[col]] > upper_bound, na.rm = TRUE)
+  outlier_summary$Outliers[outlier_summary$Variable == col] <- outliers
+  
+  # Cap outliers at bounds
+  data[[col]] <- pmin(pmax(data[[col]], lower_bound), upper_bound)
+}
+
+cat("Outlier Summary (before capping):\n")
+print(outlier_summary)
+
+# Convert categorical variables to factors
+data$gender <- factor(data$gender, levels = c(0, 1), labels = c("Female", "Male"))
+data$result <- factor(data$result, levels = c("negative", "positive"))
+
+# 2. Exploratory Data Analysis (EDA)
+# Summary statistics
+cat("Summary Statistics:\n")
+summary(data)
+
+# Distribution of Result
+result_plot <- ggplot(data, aes(x = result, fill = result)) +
+  geom_bar() +
+  theme_minimal() +
+  labs(title = "Distribution of Result (Positive vs Negative)", 
+       x = "Result", y = "Count") +
+  scale_fill_manual(values = c("negative" = "#1f77b4", "positive" = "#ff7f0e"))
+
+# Age distribution by Result
+age_plot <- ggplot(data, aes(x = result, y = age, fill = result)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title = "Age Distribution by Result", x = "Result", y = "Age") +
+  scale_fill_manual(values = c("negative" = "#1f77b4", "positive" = "#ff7f0e"))
+
+# Troponin distribution by Result
+troponin_plot <- ggplot(data, aes(x = result, y = troponin, fill = result)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title = "Troponin Levels by Result", x = "Result", y = "Troponin (ng/mL)") +
+  scale_fill_manual(values = c("negative" = "#1f77b4", "positive" = "#ff7f0e"))
+
+# CK-MB distribution by Result
+ckmb_plot <- ggplot(data, aes(x = result, y = ck_mb, fill = result)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title = "CK-MB Levels by Result", x = "Result", y = "CK-MB (ng/mL)") +
+  scale_fill_manual(values = c("negative" = "#1f77b4", "positive" = "#ff7f0e"))
+
+# Combine plots
+grid.arrange(result_plot, age_plot, troponin_plot, ckmb_plot, ncol = 2)
+
+# Correlation matrix for numeric variables
+cor_matrix <- cor(data[, numeric_cols], use = "complete.obs")
+corrplot(cor_matrix, method = "color", type = "upper", 
+         tl.col = "black", tl.srt = 45, 
+         title = "Correlation Matrix of Numeric Variables", mar = c(0,0,1,0))
+
+# 3. Statistical Analysis
+# T-tests for numeric variables by Result
+t_tests <- lapply(numeric_cols, function(var) {
+  t.test(data[[var]] ~ data$result, var.equal = FALSE)
+})
+names(t_tests) <- numeric_cols
+cat("T-test Results for Numeric Variables by Result:\n")
+for (var in numeric_cols) {
+  cat("\nVariable:", var, "\n")
+  print(t_tests[[var]])
+}
+
+# Chi-square test for Gender vs Result
+chi_square <- chisq.test(table(data$gender, data$result))
+cat("\nChi-square Test for Gender vs Result:\n")
+print(chi_square)
+
+# 4. Predictive Modeling (Logistic Regression with Cross-Validation)
+# Split data into training and testing sets
+train_index <- sample(nrow(data), 0.8*nrow(data))
+train_data <- data[train_index, ]
+test_data <- data[-train_index, ]
+
+# Train logistic regression model with 5-fold cross-validation
+ctrl <- trainControl(method = "cv", number = 5, classProbs = TRUE, summaryFunction = twoClassSummary)
+model <- train(result ~ age + gender + heart_rate + systolic_bp + diastolic_bp + 
+               blood_sugar + ck_mb + troponin, 
+               data = train_data, method = "glm", family = "binomial", 
+               trControl = ctrl, metric = "ROC")
+
+# Model summary
+cat("\nLogistic Regression Model Summary:\n")
+print(summary(model$finalModel))
+
+# Predict on test set
+predictions <- predict(model, test_data, type = "prob")[, "positive"]
+predicted_classes <- predict(model, test_data, type = "raw")
+
+# Confusion matrix
+conf_matrix <- confusionMatrix(predicted_classes, test_data$result)
+cat("\nConfusion Matrix for Logistic Regression:\n")
+print(conf_matrix)
+
+# ROC Curve and AUC
+roc_obj <- roc(test_data$result, predictions, levels = c("negative", "positive"))
+plot(roc_obj, main = "ROC Curve for Logistic Regression Model", col = "#1f77b4")
+cat("AUC:", auc(roc_obj), "\n")
+
+# 5. Feature Importance
+# Extract coefficients from the final model
+coef_summary <- summary(model$finalModel)$coefficients
+importance <- data.frame(Variable = rownames(coef_summary), 
+                        Coefficient = coef_summary[, "Estimate"], 
+                        P_Value = coef_summary[, "Pr(>|z|)"])
+importance <- importance[order(abs(importance$Coefficient), decreasing = TRUE), ]
+
+cat("\nFeature Importance (Logistic Regression Coefficients):\n")
+print(importance)
+
+# Plot feature importance
+ggplot(importance, aes(x = reorder(Variable, abs(Coefficient)), y = abs(Coefficient))) +
+  geom_bar(stat = "identity", fill = "#1f77b4") +
+  coord_flip() +
+  theme_minimal() +
+  labs(title = "Feature Importance (Absolute Coefficients)", x = "Variable", y = "Absolute Coefficient")
+
+
+
+
+
