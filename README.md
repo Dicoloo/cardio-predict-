@@ -1,1 +1,3 @@
-# cardio-predict-
+CardioPredict Analytics
+
+CardioPredict Analytics is an R-based data analysis project designed to investigate and predict cardiac outcomes using a medical dataset of 426 patient records. The dataset includes variables such as Age, Gender, Heart Rate, Systolic and Diastolic Blood Pressure, Blood Sugar, CK-MB, Troponin, and a binary outcome. Through comprehensive data cleaning, exploratory data analysis, statistical testing, and logistic regression modeling with 5-fold cross-validation, this project identifies key predictors of cardiac outcomes, with Troponin and CK-MB emerging as the most significant. Visualizations and summary tables are generated to illustrate findings, achieving a model accuracy of ~92% and an AUC of ~0.975 . The repository contains the analysis script, output files, and documentation.
