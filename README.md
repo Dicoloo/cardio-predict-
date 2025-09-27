@@ -114,10 +114,10 @@ The prominence of Troponin and CK-MB suggests that clinical protocols should pri
 
 4.3 Strengths
 
-•  Robust Data Cleaning: The IQR-based outlier capping balanced data integrity and analysis stability.
-•  Comprehensive Analysis: The integration of EDA, statistical tests, and predictive modeling provided a holistic understanding of the dataset.
-•  Cross-Validation: 5-fold cross-validation ensured reliable model performance estimates.
-•  Clear Visualizations: Plots effectively communicated key patterns, such as the strong association between biomarkers and outcomes.
+         •  Robust Data Cleaning: The IQR-based outlier capping balanced data integrity and analysis stability.
+         •  Comprehensive Analysis: The integration of EDA, statistical tests, and predictive modeling provided a holistic understanding of the dataset.
+         •  Cross-Validation: 5-fold cross-validation ensured reliable model performance estimates.
+         •  Clear Visualizations: Plots effectively communicated key patterns, such as the strong association between biomarkers and outcomes.
 
 4.4 Limitations
 
@@ -130,24 +130,20 @@ The prominence of Troponin and CK-MB suggests that clinical protocols should pri
    
     5.1. Clinical Application:
      
-      •  Prioritize Troponin and CK-MB testing for cardiac diagnosis due to their strong predictive power.
-   
-      •  Incorporate Age and Gender into risk assessment models, given their significant influence on outcomes.
-  
+            •  Prioritize Troponin and CK-MB testing for cardiac diagnosis due to their strong predictive power.
+            •  Incorporate Age and Gender into risk assessment models, given their significant influence on outcomes.
+        
     5.2.  Data Quality:
    
-      •  Implement stricter data validation to prevent errors like Heart Rate values of 1111 bpm.
-   
-      •  Verify extreme Blood Sugar and CK-MB values with clinical experts to confirm their validity.
-  
+            •  Implement stricter data validation to prevent errors like Heart Rate values of 1111 bpm.
+            •  Verify extreme Blood Sugar and CK-MB values with clinical experts to confirm their validity.
+        
     5.3.  Future Analysis:
        
-      •  Explore non-linear models, such as random forests or gradient boosting, to capture complex relationships and potentially improve accuracy.
-   
-      •  Conduct subgroup analyses, such as comparing diabetic versus non-diabetic patients based on Blood Sugar thresholds.
-   
-      •  Incorporate interaction terms (e.g., Troponin * CK-MB) or categorize Age (e.g., <40, 40–60, >60) to enhance model performance.
-  
+            •  Explore non-linear models, such as random forests or gradient boosting, to capture complex relationships and potentially improve accuracy.
+            •  Conduct subgroup analyses, such as comparing diabetic versus non-diabetic patients based on Blood Sugar thresholds.
+            •  Incorporate interaction terms (e.g., Troponin * CK-MB) or categorize Age (e.g., <40, 40–60, >60) to enhance model performance.
+        
     5.4.  Additional Data: If available, include time-to-event data for survival analysis or additional clinical variables (e.g., ECG results) to improve diagnostic accuracy.
 
 7. Conclusion
